@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Smart Study Planner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Welcome back, {{ current_user.name.split(' ')[0] }} 👋</h1>
+        <p class="page-subtitle">Here's your study overview for today.</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<section class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-icon">⏱️</span>
+        <div>
+            <span class="stat-value">{{ stats.today_minutes }} min</span>
+            <span class="stat-label">Studied Today</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon">📅</span>
+        <div>
+            <span class="stat-value">{{ stats.week_hours }} hrs</span>
+            <span class="stat-label">This Week</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <div>
+            <span class="stat-value">{{ stats.completion_rate }}%</span>
+            <span class="stat-label">Completion Rate</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-icon">📝</span>
+        <div>
+            <span class="stat-value">{{ stats.completed_tasks }}/{{ stats.total_tasks }}</span>
+            <span class="stat-label">Tasks Done</span>
+        </div>
+    </div>
+</section>
+
+<div class="dashboard-grid">
+    <!-- Daily Goals -->
+    <section class="card">
+        <div class="card-header">
+            <h2>🎯 Today's Study Goals</h2>
+            <button class="btn btn-small btn-primary" id="addGoalBtn">+ Add Goal</button>
+        </div>
+
+        <div id="addGoalForm" class="inline-form hidden">
+            <input type="text" id="goalSubject" placeholder="Subject (or leave blank for Overall)">
+            <input type="number" id="goalMinutes" placeholder="Target minutes" min="1">
+            <button class="btn btn-small btn-primary" id="saveGoalBtn">Save</button>
+        </div>
+
+        <div class="goal-list" id="goalList">
+            {% if goal_progress %}
+                {% for goal in goal_progress %}
+                <div class="goal-item" data-goal-id="{{ goal.id }}">
+                    <div class="goal-info">
+                        <span class="goal-subject">{{ goal.subject }}</span>
+                        <span class="goal-numbers">{{ goal.done_minutes }} / {{ goal.target_minutes }} min</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ goal.percent }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-state">No goals set for today yet. Add one to start tracking!</p>
+            {% endif %}
+        </div>
+
+        <div class="quick-log">
+            <h3>Quick Log Study Time</h3>
+            <div class="inline-form">
+                <input type="text" id="logSubject" placeholder="Subject">
+                <input type="number" id="logMinutes" placeholder="Minutes" min="1">
+                <button class="btn btn-small btn-secondary" id="logSessionBtn">Log</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upcoming Tasks -->
+    <section class="card">
+        <div class="card-header">
+            <h2>📋 Upcoming Tasks</h2>
+            <a href="{{ url_for('tasks.index') }}" class="card-link">View all →</a>
+        </div>
+        {% if upcoming_tasks %}
+            <ul class="task-preview-list">
+                {% for task in upcoming_tasks %}
+                <li class="task-preview-item priority-{{ task.priority }}">
+                    <div>
+                        <span class="task-preview-title">{{ task.title }}</span>
+                        {% if task.subject %}<span class="task-preview-subject">{{ task.subject }}</span>{% endif %}
+                    </div>
+                    <span class="task-preview-date">{{ task.due_date.strftime('%d %b') if task.due_date else 'No date' }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-state">No upcoming tasks in the next 7 days. 🎉</p>
+        {% endif %}
+    </section>
+
+    <!-- Exam Countdown -->
+    <section class="card">
+        <div class="card-header">
+            <h2>⏳ Next Exam Countdown</h2>
+            <a href="{{ url_for('planner.index') }}" class="card-link">Manage →</a>
+        </div>
+        {% if next_exam %}
+            <div class="countdown-box">
+                <span class="countdown-number">{{ next_exam.days_left }}</span>
+                <span class="countdown-label">day{{ 's' if next_exam.days_left != 1 else '' }} left</span>
+                <span class="countdown-subject">{{ next_exam.subject }}</span>
+                <span class="countdown-date">{{ next_exam.exam_date }}</span>
+            </div>
+        {% else %}
+            <p class="empty-state">No exams scheduled. Add one in the Planner.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

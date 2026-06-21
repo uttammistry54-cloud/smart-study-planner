@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Planner - Smart Study Planner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Study Planner</h1>
+        <p class="page-subtitle">Plan your weekly schedule and track exam deadlines.</p>
+    </div>
+</div>
+
+<div class="planner-grid">
+    <!-- Weekly Timetable -->
+    <section class="card card-wide">
+        <div class="card-header">
+            <h2>🗓️ Weekly Timetable</h2>
+            <button class="btn btn-small btn-primary" id="openAddSlotBtn">+ Add Slot</button>
+        </div>
+
+        <div class="timetable-scroll">
+            <div class="timetable-grid">
+                {% for day in days_of_week %}
+                <div class="timetable-day">
+                    <h3 class="timetable-day-label">{{ day }}</h3>
+                    <div class="timetable-slots">
+                        {% if timetable[day] %}
+                            {% for entry in timetable[day] %}
+                            <div class="timetable-slot">
+                                <div class="slot-time">{{ entry.start_time }} - {{ entry.end_time }}</div>
+                                <div class="slot-subject">{{ entry.subject }}</div>
+                                <form action="{{ url_for('planner.delete_timetable_entry', entry_id=entry.id) }}" method="POST" onsubmit="return confirm('Remove this slot?');">
+                                    <button type="submit" class="slot-delete" aria-label="Remove slot">&times;</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state-small">No slots</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Exam Countdown -->
+    <section class="card">
+        <div class="card-header">
+            <h2>⏳ Exam Countdown</h2>
+            <button class="btn btn-small btn-primary" id="openAddExamBtn">+ Add Exam</button>
+        </div>
+
+        {% if exams %}
+        <div class="exam-list">
+            {% for item in exams %}
+            <div class="exam-item {% if item.days_left < 0 %}exam-past{% elif item.days_left <= 3 %}exam-urgent{% endif %}">
+                <div class="exam-info">
+                    <span class="exam-subject">{{ item.exam.subject }}</span>
+                    <span class="exam-date">{{ item.exam.exam_date.strftime('%d %b %Y') }}</span>
+                </div>
+                <div class="exam-countdown-badge">
+                    {% if item.days_left > 0 %}
+                        {{ item.days_left }}d left
+                    {% elif item.days_left == 0 %}
+                        Today!
+                    {% else %}
+                        Passed
+                    {% endif %}
+                </div>
+                <form action="{{ url_for('planner.delete_exam', exam_id=item.exam.id) }}" method="POST" onsubmit="return confirm('Remove this exam?');">
+                    <button type="submit" class="btn-icon" aria-label="Delete exam">🗑️</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-state">No exams added yet.</p>
+        {% endif %}
+    </section>
+</div>
+
+<!-- Add Timetable Slot Modal -->
+<div class="modal-overlay hidden" id="addSlotModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Add Timetable Slot</h2>
+            <button class="modal-close" data-close="addSlotModal">&times;</button>
+        </div>
+        <form action="{{ url_for('planner.add_timetable_entry') }}" method="POST" class="modal-form">
+            <div class="form-group">
+                <label for="day_of_week">Day</label>
+                <select id="day_of_week" name="day_of_week" required>
+                    {% for day in days_of_week %}
+                    <option value="{{ day }}">{{ day }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="slot_subject">Subject</label>
+                <input type="text" id="slot_subject" name="subject" required>
+            </div>
+            <div class="form-row-split">
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="time" id="start_time" name="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_time">End Time</label>
+                    <input type="time" id="end_time" name="end_time" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Slot</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Exam Modal -->
+<div class="modal-overlay hidden" id="addExamModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Add Exam</h2>
+            <button class="modal-close" data-close="addExamModal">&times;</button>
+        </div>
+        <form action="{{ url_for('planner.add_exam') }}" method="POST" class="modal-form">
+            <div class="form-group">
+                <label for="exam_subject">Subject</label>
+                <input type="text" id="exam_subject" name="subject" required>
+            </div>
+            <div class="form-group">
+                <label for="exam_date">Exam Date</label>
+                <input type="date" id="exam_date" name="exam_date" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Exam</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/planner.js') }}"></script>
+{% endblock %}

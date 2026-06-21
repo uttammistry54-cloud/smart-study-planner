@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Tasks - Smart Study Planner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Task Management</h1>
+        <p class="page-subtitle">Stay on top of your assignments and study tasks.</p>
+    </div>
+    <button class="btn btn-primary" id="openAddTaskBtn">+ Add Task</button>
+</div>
+
+<div class="filter-tabs">
+    <a href="{{ url_for('tasks.index', status='all') }}" class="filter-tab {% if filter_status == 'all' %}active{% endif %}">All</a>
+    <a href="{{ url_for('tasks.index', status='pending') }}" class="filter-tab {% if filter_status == 'pending' %}active{% endif %}">Pending</a>
+    <a href="{{ url_for('tasks.index', status='completed') }}" class="filter-tab {% if filter_status == 'completed' %}active{% endif %}">Completed</a>
+</div>
+
+{% if tasks %}
+<div class="task-list">
+    {% for task in tasks %}
+    <div class="task-card priority-{{ task.priority }} {% if task.status == 'completed' %}completed{% endif %}" data-task-id="{{ task.id }}">
+        <div class="task-card-main">
+            <form action="{{ url_for('tasks.toggle_task', task_id=task.id) }}" method="POST" class="toggle-form">
+                <button type="submit" class="task-checkbox" aria-label="Toggle complete">
+                    {% if task.status == 'completed' %}✓{% endif %}
+                </button>
+            </form>
+            <div class="task-card-body">
+                <h3 class="task-title">{{ task.title }}</h3>
+                <div class="task-meta">
+                    {% if task.subject %}<span class="badge badge-subject">{{ task.subject }}</span>{% endif %}
+                    <span class="badge badge-priority-{{ task.priority }}">{{ task.priority|capitalize }}</span>
+                    {% if task.due_date %}<span class="badge badge-date">📅 {{ task.due_date.strftime('%d %b %Y') }}</span>{% endif %}
+                </div>
+                {% if task.description %}<p class="task-description">{{ task.description }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="task-card-actions">
+            <button class="btn-icon edit-task-btn"
+                data-id="{{ task.id }}"
+                data-title="{{ task.title }}"
+                data-subject="{{ task.subject or '' }}"
+                data-description="{{ task.description or '' }}"
+                data-due-date="{{ task.due_date.isoformat() if task.due_date else '' }}"
+                data-priority="{{ task.priority }}"
+                aria-label="Edit task">✏️</button>
+            <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="POST" onsubmit="return confirm('Delete this task?');">
+                <button type="submit" class="btn-icon" aria-label="Delete task">🗑️</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state empty-state-large">No tasks here. Click "+ Add Task" to create one.</p>
+{% endif %}
+
+<!-- Add Task Modal -->
+<div class="modal-overlay hidden" id="addTaskModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Add New Task</h2>
+            <button class="modal-close" data-close="addTaskModal">&times;</button>
+        </div>
+        <form action="{{ url_for('tasks.add_task') }}" method="POST" class="modal-form">
+            <div class="form-group">
+                <label for="add_title">Title *</label>
+                <input type="text" id="add_title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="add_subject">Subject</label>
+                <input type="text" id="add_subject" name="subject">
+            </div>
+            <div class="form-group">
+                <label for="add_description">Description</label>
+                <textarea id="add_description" name="description" rows="3"></textarea>
+            </div>
+            <div class="form-row-split">
+                <div class="form-group">
+                    <label for="add_due_date">Due Date</label>
+                    <input type="date" id="add_due_date" name="due_date">
+                </div>
+                <div class="form-group">
+                    <label for="add_priority">Priority</label>
+                    <select id="add_priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Task</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div class="modal-overlay hidden" id="editTaskModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Edit Task</h2>
+            <button class="modal-close" data-close="editTaskModal">&times;</button>
+        </div>
+        <form id="editTaskForm" action="" method="POST" class="modal-form">
+            <div class="form-group">
+                <label for="edit_title">Title *</label>
+                <input type="text" id="edit_title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="edit_subject">Subject</label>
+                <input type="text" id="edit_subject" name="subject">
+            </div>
+            <div class="form-group">
+                <label for="edit_description">Description</label>
+                <textarea id="edit_description" name="description" rows="3"></textarea>
+            </div>
+            <div class="form-row-split">
+                <div class="form-group">
+                    <label for="edit_due_date">Due Date</label>
+                    <input type="date" id="edit_due_date" name="due_date">
+                </div>
+                <div class="form-group">
+                    <label for="edit_priority">Priority</label>
+                    <select id="edit_priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{% endblock %}
